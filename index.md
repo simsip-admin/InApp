@@ -12,20 +12,14 @@ The challenge with cross-platform in-app purchasing (IAP) is that the transactio
 
 
 ### Setup
-1. In Visual Studio, start with a new Blank App (Xamarin.Forms.Portable), and remove the iOS and Windows Phone platform projects.
-1. Head over to Fortumo ()[http://fortumo.com](http://fortumo.com "Fortumo")) and sign-up as a developer.
-2. Download the Fortumo Android SDK jar.
-3. In your Visual Studio solution you created above, create a new Bindings Library (Android) project.
-1. Place the Fortumo Android SDK jar file in the resulting Jars folder.
-2. Add the Fortumo Android SDK jar file to the project and set the Build Action to ```EmbeddedJar```.
-3. Build the Bindings project and make sure there are no errors.
+1. In Visual Studio, start with a new Blank App (Xamarin.Forms.Portable), and remove the Windows Phone platform projects.
 
 ### The Interface
 The interface exposes an API and set of events to consume IAP.
 
 > But wait you say, can't we do this with a Task based API instead of hooking up events? Hang in there that's exactly where I want to evolve this sample in the future.
 
-In your portable project create a Services folder and the interface ```IFortumoInAppService```.
+In your portable project create a Services folder and the interface ```IInAppService```.
 
 Add the following API to the interface:
 
@@ -120,7 +114,7 @@ Add the following events to the interface:
         /// </summary>
         event OnPurchaseFailedValidationDelegate OnPurchaseFailedValidation;
 
-And finally add these delegates in the ```IFortumaInAppService``` file outside of the interface definition. The delegate definitions are used in the event signatures:
+And finally add these delegates in the ```IInAppService``` file outside of the interface definition. The delegate definitions are used in the event signatures:
 
     public delegate void OnQueryInventoryDelegate();
 
