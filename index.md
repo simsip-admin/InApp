@@ -165,8 +165,8 @@ And finally add these delegates in the ```IInAppService``` file outside of the i
     public delegate void OnInvalidOwnedItemsBundleReturnedDelegate(
         IDictionary<string, object> ownedItems);
 
-    public delegate void OnPurchaseFailedValidationDelegate(InAppPurchase purchase, 
-        string purchaseData, string purchaseSignature);
+    public delegate void OnPurchaseFailedValidationDelegate(
+        InAppPurchase purchase, string purchaseData, string purchaseSignature);
 
 ### The Implementation
 I won't be showing code in this section - only pointing you to the necessary files in the GitHub repository to add to your implementation. Actual code will be exposed in the Code Walk-through  section below.
