@@ -6,7 +6,7 @@ home: true
 
 ## Xamarin Forms Dependency Service for In-App Purchases
 
-The challenge with cross-platform in-app purchasing (IAP) is that the transaction flows are so different across iOS and Android. In the game Linerunner 3D, I wanted a consistent interface to code against for IAP. While I was able to accomplish this, the code-base was shared code not PCL so I ended up with a lot of #defines. With Xamarin.Forms and the DependencyService we have a cleaner way of exposing platform-specific functionality exposed via a consistent API. This sample exposes platform specific IAP functionality via a single interface that can be consumed in a Xamarin.Forms PCL.  
+The challenge with cross-platform in-app purchasing (IAP) is that the transaction flows are so different across iOS and Android. In the game [Linerunner 3D](http://linerunner3d.com "Linerunner 3D") Linerunner 3D, I wanted a consistent interface to code against for IAP. While I was able to accomplish this, the code-base was shared code not PCL so I ended up with a lot of #defines. With Xamarin.Forms and the DependencyService we have a cleaner way of exposing platform-specific functionality exposed via a consistent API. This sample exposes platform specific IAP functionality via a single interface that can be consumed in a Xamarin.Forms PCL.  
 
 <img src="images/screenshot-ios-inapp.PNG" width="40%">  <img src="images/screenshot-android-inapp.png" width="40%">
 
