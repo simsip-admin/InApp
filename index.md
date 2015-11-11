@@ -38,69 +38,64 @@ The challenge with cross-platform in-app purchasing (IAP) is that the transactio
 ### The Interface
 The interface exposes an API and set of events to consume IAP.
 
-> But wait you say, can't we do this with a Task based API instead of hooking up events? Hang in there that's exactly where I want to evolve this sample in the future.
+> But wait you say, can't we do this with a Task based API instead of hooking up events? Hang in there, that's exactly where I want to evolve this sample in the future.
 
-In your portable project create a Services folder and the interface ```IInAppService```.
+In your portable project create a Services folder and in the Service folder create an interface file ```IInAppService```.
 
 Add the following API to the interface:
 
+        
+        /// <summary>
+        /// A product id we can use for testing purposes.
+        /// </summary>
         string PracticeModeProductId { get; }
 
         /// <summary>
-        /// Starts the setup of this Android application by connection to the Google Play Service
-        /// to handle In-App purchases.
+        /// Initializes the platform specific In-App Purchasing service.
         /// </summary>
         void Initialize();
 
         /// <summary>
-        /// Queries the inventory asynchronously and returns a list of Xamarin.Android.InAppBilling.Products
-        /// matching the given list of SKU numbers.
+        /// Queries your product inventory asynchronously against your platform specific In-App Purchasing service.
         /// </summary>
-        /// <param name="skuList">Sku list.</param>
-        /// <param name="itemType">The Xamarin.Android.InAppBilling.ItemType of product being queried.</param>
-        /// <returns>List of Xamarin.Android.InAppBilling.Products matching the given list of SKUs.
-        /// </returns>
         void QueryInventory();
 
         /// <summary>
-        /// Buys the given Xamarin.Android.InAppBilling.Product
-        /// 
-        /// This method automatically generates a unique GUID and attaches it as the
-        /// developer payload for this purchase.
+        /// Attempts to purchase a given product identified by a product against your platform specific In-App Purchasing service.
         /// </summary>
-        /// <param name="product">The Xamarin.Android.InAppBilling.Product representing the item the users
-        /// wants to purchase.</param>
         void PurchaseProduct(string productId);
 
+        /// <summary>
+        /// Attempts to restore products a user has already purchased.
+        /// </summary>
         void RestoreProducts();
 
         /// <summary>
-        /// For testing purposes only.
+        /// For testing purposes only on Android.
+        /// 
+        /// Allows for a convenient hook-up in your administrative ui to clear out a previous purchase.
         /// </summary>
         void RefundProduct();
 
 Add the following events to the interface:
 
         /// <summary>
-        /// Occurs when a query inventory transactions completes successfully with Google Play Services.
+        /// Occurs when a query inventory transactions completes successfully against your platform specific In-App Purchasing service.
         /// </summary>
         event OnQueryInventoryDelegate OnQueryInventory;
 
         /// <summary>
-        /// Occurs after a product has been successfully purchased Google Play.
-        /// 
-        /// This event is fired after a OnProductPurchased which is raised when the user
-        /// successfully logs an intent to purchase with Google Play.
+        /// Occurs after a product has been successfully purchased with your platform specific In-App Purchasing service.
         /// </summary>
         event OnPurchaseProductDelegate OnPurchaseProduct;
 
         /// <summary>
-        /// Occurs after a successful products restored transactions with Google Play.
+        /// Occurs after a successful products restored transaction with your platform specific In-App Purchasing service.
         /// </summary>
         event OnRestoreProductsDelegate OnRestoreProducts;
 
         /// <summary>
-        /// Occurs when there is an error querying inventory from Google Play Services.
+        /// Occurs when there is an error querying inventory from your platform specific In-App Purchasing service.
         /// </summary>
         event OnQueryInventoryErrorDelegate OnQueryInventoryError;
 
@@ -115,7 +110,7 @@ Add the following events to the interface:
         event OnRestoreProductsErrorDelegate OnRestoreProductsError;
 
         /// <summary>
-        /// Occurs when on user canceled.
+        /// Occurs when a user cancels.
         /// </summary>
         event OnUserCanceledDelegate OnUserCanceled;
 
@@ -125,12 +120,16 @@ Add the following events to the interface:
         event OnInAppBillingProcessingErrorDelegate OnInAppBillingProcesingError;
 
         /// <summary>
+        /// ANDROID ONLY
+        ///
         /// Raised when Google Play Services returns an invalid bundle from previously
         /// purchased items
         /// </summary>
         event OnInvalidOwnedItemsBundleReturnedDelegate OnInvalidOwnedItemsBundleReturned;
 
         /// <summary>
+        /// ANDROID ONLY
+        ///
         /// Occurs when a previously purchased product fails to validate.
         /// </summary>
         event OnPurchaseFailedValidationDelegate OnPurchaseFailedValidation;
