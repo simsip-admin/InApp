@@ -169,14 +169,11 @@ And finally add these delegates in the ```IInAppService``` file outside of the i
         InAppPurchase purchase, string purchaseData, string purchaseSignature);
 
 ### The Implementation
-I won't be showing code in this section - only pointing you to the necessary files in the GitHub repository to add to your implementation. Actual code will be exposed in the Code Walk-through  section below.
+I won't be showing code in this section - only pointing you to the necessary files in the GitHub repository to add to your implementation. Actual code will be exposed in the ```Code Walk-through```  section below.
 
-1. Add a Services folder to your iOS and Android platform project.
-2. Add the following file from the GitHub repository ([https://github.com/simsip-admin/InApp](https://github.com/simsip-admin/InApp "InApp")) into each Services folder.
-   * InAppService.cs
-
-### Android Configuration
-We'll see how all of this hooks-up in the Code Walk-through section below.
+1. Add a ```Services``` folder to both your iOS and Android platform projects.
+1. In the [InApp GitHub Repository](https://github.com/simsip-admin/InApp "InApp GitHub Repository") navigate to the ```InApp/InApp.iOS/Services``` folder and copy the ```InAppService.cs``` file to your iOS ```Services``` folder you just created.
+2. In the [InApp GitHub Repository](https://github.com/simsip-admin/InApp "InApp GitHub Repository") navigate to the ```InApp/InApp.Droid/Services``` folder and copy the ```InAppService.cs``` file to your Android ```Services``` folder you just created.
 
 ### The Sample App
 I have kept the UI and MVVM architecture as simple as possible so that the focus can be on the transaction flows for IAP.
