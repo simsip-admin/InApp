@@ -62,7 +62,7 @@ Add the following API to the interface:
         void QueryInventory();
 
         /// <summary>
-        /// Attempts to purchase a given product identified by a product 
+        /// Attempts to purchase a given product identified by a product id
         /// against your platform specific In-App Purchasing service.
         /// </summary>
         void PurchaseProduct(string productId);
@@ -83,7 +83,7 @@ Add the following API to the interface:
 Add the following events to the interface:
 
         /// <summary>
-        /// Occurs when a query inventory transactions completes successfully 
+        /// Occurs when a query inventory transaction completes successfully 
         /// against your platform specific In-App Purchasing service.
         /// </summary>
         event OnQueryInventoryDelegate OnQueryInventory;
@@ -101,30 +101,27 @@ Add the following events to the interface:
         event OnRestoreProductsDelegate OnRestoreProducts;
 
         /// <summary>
-        /// Occurs when there is an error querying inventory from your platform 
-        /// specific In-App Purchasing service.
+        /// Occurs when there is an error querying inventory.
         /// </summary>
         event OnQueryInventoryErrorDelegate OnQueryInventoryError;
 
         /// <summary>
-        /// Occurs when the user attempts to buy a product and there is 
-        /// an error.
+        /// Occurs when there is an error buying a product.
         /// </summary>
         event OnPurchaseProductErrorDelegate OnPurchaseProductError;
 
         /// <summary>
-        /// Occurs when the user attempts to restore products and there is 
-        /// an error.
+        /// Occurs when there is an error restoring products.
         /// </summary>
         event OnRestoreProductsErrorDelegate OnRestoreProductsError;
 
         /// <summary>
-        /// Occurs when a user cancels.
+        /// Occurs when a user cancels a purchase or restore transaction.
         /// </summary>
         event OnUserCanceledDelegate OnUserCanceled;
 
         /// <summary>
-        /// Occurs when there is an in app billing procesing error.
+        /// Occurs when there is an In-App Purchasing procesing error.
         /// </summary>
         event OnInAppBillingProcessingErrorDelegate OnInAppBillingProcesingError;
 
@@ -132,7 +129,7 @@ Add the following events to the interface:
         /// ANDROID ONLY
         ///
         /// Raised when Google Play Services returns an invalid bundle from 
-        /// previously purchased items
+        /// previously purchased items.
         /// </summary>
         event OnInvalidOwnedItemsBundleReturnedDelegate 
             OnInvalidOwnedItemsBundleReturned;
@@ -172,7 +169,7 @@ And finally add these delegates in the ```IInAppService``` file outside of the i
         string purchaseData, string purchaseSignature);
 
 ### The Implementation
-I won't be showing code in this section - only pointing you to the necessary files in the GitHub repository to add to your implementation. Actual code will be exposed in the Code Walk-through below.
+I won't be showing code in this section - only pointing you to the necessary files in the GitHub repository to add to your implementation. Actual code will be exposed in the Code Walk-through  section below.
 
 1. Add a Services folder to your iOS and Android platform project.
 2. Add the following file from the GitHub repository ([https://github.com/simsip-admin/InApp](https://github.com/simsip-admin/InApp "InApp")) into each Services folder.
