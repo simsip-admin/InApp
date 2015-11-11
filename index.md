@@ -177,6 +177,176 @@ I won't be showing code in this section - only pointing you to the necessary fil
 
 ### The Sample App
 I have kept the UI and MVVM architecture as simple as possible so that the focus can be on the transaction flows for IAP.
+#### App
+The ```App``` class couldn't be simpler. We have one View Model for the entire app and this is exposed via the static member ```ViewModel```. 
+
+    public static InAppViewModel ViewModel;
+
+The ```App``` constructor is responsible for instantiating the View Model and then passes the ```App.Properties``` dictionary to the View Model to restore state. 
+
+    ViewModel = new InAppViewModel();
+    ViewModel.RestoreState(Current.Properties);
+
+To keep this app simple we are storing purchases to ```App.Properties```. Normally, you would store purchases to ```SQLite.net```, but that would unnecessarily complicate this sample. 
+
+In ```App.OnSleep``` we save out the View Model's state.
+
+    ViewModel.SaveState(Current.Properties);
+ 
+#### Models
+Our Product Model looks as follows:
+
+    public class InAppProduct
+    {
+        /// <summary>
+        /// The product ID for the product.
+        /// </summary>
+        public string ProductId { get; set; }
+
+        /// <summary>
+        /// Value must be “inapp” for an in-app product or "subs" for subscriptions.
+        /// </summary>
+        public string Type { get; set; }
+
+        /// <summary>
+        /// 	Formatted price of the item, including its currency sign. The price does not include tax.
+        /// </summary>
+        public string Price { get; set; }
+
+        public string IconSource { get; set; }
+
+        /// <summary>
+        /// Price in micro-units, where 1,000,000 micro-units equal one unit of the currency. 
+        /// 
+        /// For example, if price is "€7.99", price_amount_micros is "7990000".
+        /// </summary>
+        public int PriceAmountMicros { get; set; }
+
+        /// <summary>
+        /// ISO 4217 currency code for price. 
+        /// 
+        /// For example, if price is specified in British pounds sterling, price_currency_code is "GBP".
+        /// </summary>
+        public string PriceCurrencyCode { get; set; }
+
+        /// <summary>
+        ///	Title of the product.
+        /// </summary>
+        public string Title { get; set; }
+
+        /// <summary>
+        /// Description of the product.
+        /// </summary>
+        public string Description { get; set; }
+    }
+
+And our Purchase Model looks like this:
+
+    [DataContract]
+    public class InAppPurchase
+    {
+        /// <summary>
+        /// A unique order identifier for the transaction. 
+        /// 
+        /// This identifier corresponds to the Google payments order ID.
+        /// </summary>
+        public string OrderId { get; set; }
+
+        /// <summary>
+        /// Indicates whether the subscription renews automatically. 
+        /// 
+        /// If true, the subscription is active, and will automatically renew on the 
+        /// next billing date. If false, indicates that the user has canceled the subscription. 
+        /// The user has access to subscription content until the next billing date and will 
+        /// lose access at that time unless they re-enable automatic renewal (or manually renew, 
+        /// as described in Manual Renewal). If you offer a grace period, this value remains set 
+        /// to true for all subscriptions, as long as the grace period has not lapsed. 
+        /// The next billing date is extended dynamically every day until the end of the grace 
+        /// period or until the user fixes their payment method.
+        /// </summary>
+        public bool AutoRenewing { get; set; }
+
+        /// <summary>
+        ///	The application package from which the purchase originated.
+        /// </summary>
+        public string PackageName { get; set; }
+
+        /// <summary>
+        /// The item's product identifier. 
+        /// 
+        /// Every item has a product ID, which you must specify in the application's product list 
+        /// on the Google Play Developer Console.
+        /// </summary>
+        [DataMember]
+        public string ProductId { get; set; }
+        
+        /// <summary>
+        /// The time the product was purchased, in milliseconds since the epoch (Jan 1, 1970).
+        /// </summary>
+        public DateTime PurchaseTime { get; set; }
+
+        /// <summary>
+        /// The purchase state of the order. 
+        /// 
+        /// Possible values are 0 (purchased), 1 (canceled), or 2 (refunded).
+        /// </summary>
+        public int PurchaseState { get; set; }
+        
+        /// <summary>
+        /// A developer-specified string that contains supplemental information about an order. 
+        /// 
+        /// You can specify a value for this field when you make a getBuyIntent request.
+        /// </summary>
+        public string DeveloperPayload	{get; set; }
+        
+        /// <summary>
+        /// A token that uniquely identifies a purchase for a given item and user pair.
+        /// </summary>
+        public string PurchaseToken	{get; set; }
+    }
+
+The ```DataContract``` and ```DataMember``` annotations are here for simple serialization of purchases - normally instances of these models would be serialized to ```SQLite.net```. 
+
+#### ViewModel
+Our View Model constructor starts off by requesting a ```GlobalInstance``` of our ```IInAppService``` from the ```DependencyService```.
+
+    _inAppService = DependencyService.Get<IInAppService>();
+
+Continuing in our constructor, we then hook-up a core set of event handlers to span the life cycle of IAP purchasing and restoring.
+
+    _inAppService.OnQueryInventory += OnQueryInventory;
+    _inAppService.OnPurchaseProduct += OnPurchaseProduct;
+    _inAppService.OnRestoreProducts += OnRestoreProducts;
+
+Our purchases will be backed by an ```ObservableCollection``` in the View Model and the ```InAppPurchaseList``` class helps us when serializing and deserializing the ```ObservableCollection``` from ```App.Properties```.
+
+    _purchases = new ObservableCollection<InAppPurchase>();
+    _purchaseList = new InAppPurchaseList();
+
+A set of three simple products are built up via the helper method ```InitializeProducts```. This is to keep the app simple. You would probably have something more elaborate here such as:
+
+* Backed by a ```SQLite``` table
+* Built up via the response from a call to ```IInAppService.QueryInventory```
+* A web service call to your server
+* Or a combination of any of the above
+
+The View Model constructor finishes by defining three simple commands to expose Querying, Purchasing and Restoring from your IAP service. Here is the QueryCommand:
+
+```
+
+QueryCommand = new Command<InAppProduct>(
+    execute: (product) =>
+    {
+        _inAppService.QueryInventory();
+    });
+
+```
+
+The rest of the View Model won't be covered as it consists of mainly of helper functions and boiler-plate View Model code that are outside our focus on IAP.
+
+#### Pages
+We use a ```MasterDetailPage``` to setup a simple navigation for the two pages we will be hosting in this app. See ```InApp.Pages.RootPage``` and ```InApp.Pages.MenuPage``` for the Master-Detail setup. The ```InApp.Pages.ShopPage``` presents a ```ListView``` of the products available in our app. The ```ViewCell``` for this ```ListView``` contains a ```Button``` and a ```Label``` hooked up to our View Model's ```PurchaseCommand``` and ```RestoreCommand``` respectively. The ```InApp.Pages.PurchasesPage``` presents a ```ListView``` of the purchases we have made.
+
 
 ### Code Walk-through
 
