@@ -56,12 +56,14 @@ Add the following API to the interface:
         void Initialize();
 
         /// <summary>
-        /// Queries your product inventory asynchronously against your platform specific In-App Purchasing service.
+        /// Queries your product inventory asynchronously against your 
+        /// platform specific In-App Purchasing service.
         /// </summary>
         void QueryInventory();
 
         /// <summary>
-        /// Attempts to purchase a given product identified by a product against your platform specific In-App Purchasing service.
+        /// Attempts to purchase a given product identified by a product 
+        /// against your platform specific In-App Purchasing service.
         /// </summary>
         void PurchaseProduct(string productId);
 
@@ -73,39 +75,46 @@ Add the following API to the interface:
         /// <summary>
         /// For testing purposes only on Android.
         /// 
-        /// Allows for a convenient hook-up in your administrative ui to clear out a previous purchase.
+        /// Allows for a convenient hook-up in your administrative ui to
+        /// clear out a previous purchase.
         /// </summary>
         void RefundProduct();
 
 Add the following events to the interface:
 
         /// <summary>
-        /// Occurs when a query inventory transactions completes successfully against your platform specific In-App Purchasing service.
+        /// Occurs when a query inventory transactions completes successfully 
+        /// against your platform specific In-App Purchasing service.
         /// </summary>
         event OnQueryInventoryDelegate OnQueryInventory;
 
         /// <summary>
-        /// Occurs after a product has been successfully purchased with your platform specific In-App Purchasing service.
+        /// Occurs after a product has been successfully purchased with your 
+        /// platform specific In-App Purchasing service.
         /// </summary>
         event OnPurchaseProductDelegate OnPurchaseProduct;
 
         /// <summary>
-        /// Occurs after a successful products restored transaction with your platform specific In-App Purchasing service.
+        /// Occurs after a successful products restored transaction with your 
+        /// platform specific In-App Purchasing service.
         /// </summary>
         event OnRestoreProductsDelegate OnRestoreProducts;
 
         /// <summary>
-        /// Occurs when there is an error querying inventory from your platform specific In-App Purchasing service.
+        /// Occurs when there is an error querying inventory from your platform 
+        /// specific In-App Purchasing service.
         /// </summary>
         event OnQueryInventoryErrorDelegate OnQueryInventoryError;
 
         /// <summary>
-        /// Occurs when the user attempts to buy a product and there is an error.
+        /// Occurs when the user attempts to buy a product and there is 
+        /// an error.
         /// </summary>
         event OnPurchaseProductErrorDelegate OnPurchaseProductError;
 
         /// <summary>
-        /// Occurs when the user attempts to restore products and there is an error.
+        /// Occurs when the user attempts to restore products and there is 
+        /// an error.
         /// </summary>
         event OnRestoreProductsErrorDelegate OnRestoreProductsError;
 
@@ -122,10 +131,11 @@ Add the following events to the interface:
         /// <summary>
         /// ANDROID ONLY
         ///
-        /// Raised when Google Play Services returns an invalid bundle from previously
-        /// purchased items
+        /// Raised when Google Play Services returns an invalid bundle from 
+        /// previously purchased items
         /// </summary>
-        event OnInvalidOwnedItemsBundleReturnedDelegate OnInvalidOwnedItemsBundleReturned;
+        event OnInvalidOwnedItemsBundleReturnedDelegate 
+            OnInvalidOwnedItemsBundleReturned;
 
         /// <summary>
         /// ANDROID ONLY
@@ -142,19 +152,24 @@ And finally add these delegates in the ```IInAppService``` file outside of the i
 
     public delegate void OnRestoreProductsDelegate();
 
-    public delegate void OnQueryInventoryErrorDelegate(int responseCode, IDictionary<string, object> skuDetails);
+    public delegate void OnQueryInventoryErrorDelegate(int responseCode, 
+        IDictionary<string, object> skuDetails);
 
-    public delegate void OnPurchaseProductErrorDelegate(int responseCode, string sku);
+    public delegate void OnPurchaseProductErrorDelegate(int responseCode, 
+        string sku);
 
-    public delegate void OnRestoreProductsErrorDelegate(int responseCode, IDictionary<string, object> skuDetails);
+    public delegate void OnRestoreProductsErrorDelegate(int responseCode, 
+       IDictionary<string, object> skuDetails);
 
     public delegate void OnUserCanceledDelegate();
 
     public delegate void OnInAppBillingProcessingErrorDelegate(string message);
 
-    public delegate void OnInvalidOwnedItemsBundleReturnedDelegate(IDictionary<string, object> ownedItems);
+    public delegate void OnInvalidOwnedItemsBundleReturnedDelegate(
+        IDictionary<string, object> ownedItems);
 
-    public delegate void OnPurchaseFailedValidationDelegate(InAppPurchase purchase, string purchaseData, string purchaseSignature);
+    public delegate void OnPurchaseFailedValidationDelegate(InAppPurchase purchase, 
+        string purchaseData, string purchaseSignature);
 
 ### The Implementation
 I won't be showing code in this section - only pointing you to the necessary files in the GitHub repository to add to your implementation. Actual code will be exposed in the Code Walk-through below.
