@@ -169,11 +169,40 @@ And finally add these delegates in the ```IInAppService``` file outside of the i
         InAppPurchase purchase, string purchaseData, string purchaseSignature);
 
 ### The Implementation
-I won't be showing code in this section - only pointing you to the necessary files in the GitHub repository to add to your implementation. Actual code will be exposed in the ```Code Walk-through```  section below.
+I won't be showing much code in this section - mostly pointing you to the necessary files in the GitHub repository to add to your implementation. Actual code will be exposed in the ```Code Walk-through```  section below.
 
 1. Add a ```Services``` folder to both your iOS and Android platform projects.
 1. In the [InApp GitHub Repository](https://github.com/simsip-admin/InApp "InApp GitHub Repository") navigate to the ```InApp/InApp.iOS/Services``` folder and copy the ```InAppService.cs``` file to your iOS ```Services``` folder you just created.
 2. In the [InApp GitHub Repository](https://github.com/simsip-admin/InApp "InApp GitHub Repository") navigate to the ```InApp/InApp.Droid/Services``` folder and copy the ```InAppService.cs``` file to your Android ```Services``` folder you just created.
+
+Now add the following override to the iOS platform project's ```AppDelegate``` class:
+
+        public override void WillTerminate(UIApplication application)
+        {
+            var inAppService = App.ViewModel.TheInAppService as InAppService;
+            inAppService.WillTerminate();
+
+            base.WillTerminate(application);
+        }
+
+And add the following overrides to the Android platform project's ```MainActivity``` class:
+
+        protected override void OnActivityResult(int requestCode, Result resultCode, Intent data)
+        {
+            // Ask the in-app purchasing service connection's billing handler to process this request
+            InAppService inAppService = App.ViewModel.TheInAppService as InAppService;
+            inAppService.HandleActivityResult(requestCode, resultCode, data);
+        }
+
+        protected override void OnDestroy()
+        {
+            // Disconnect from the in-app purchasing service
+            InAppService inAppService = App.ViewModel.TheInAppService as InAppService;
+            inAppService.OnDestroy();
+
+            base.OnDestroy();
+        }
+
 
 ### The Sample App
 I have kept the UI and MVVM architecture as simple as possible so that the focus can be on the transaction flows for IAP.
@@ -310,13 +339,17 @@ The ```DataContract``` and ```DataMember``` annotations are here for simple seri
 #### ViewModel
 Our View Model constructor starts off by requesting a ```GlobalInstance``` of our ```IInAppService``` from the ```DependencyService```.
 
-    _inAppService = DependencyService.Get<IInAppService>();
+    TheInAppService = DependencyService.Get<IInAppService>();
 
 Continuing in our constructor, we then hook-up a core set of event handlers to span the life cycle of IAP purchasing and restoring.
 
-    _inAppService.OnQueryInventory += OnQueryInventory;
-    _inAppService.OnPurchaseProduct += OnPurchaseProduct;
-    _inAppService.OnRestoreProducts += OnRestoreProducts;
+    TheInAppService.OnQueryInventory += OnQueryInventory;
+    TheInAppService.OnPurchaseProduct += OnPurchaseProduct;
+    TheInAppService.OnRestoreProducts += OnRestoreProducts;
+
+With ```TheInAppService``` ready, call its ```Initialize``` function. We will see in the ```Code Walk-through``` section what this function does for us.
+
+    TheInAppService.Initialize();
 
 Our purchases will be backed by an ```ObservableCollection``` in the View Model and the ```InAppPurchaseList``` class helps us when serializing and deserializing the ```ObservableCollection``` from ```App.Properties```.
 
@@ -330,14 +363,14 @@ A set of three simple products are built up via the helper method ```InitializeP
 * A web service call to your server
 * Or a combination of any of the above
 
-The View Model constructor finishes by defining three simple commands to expose Querying, Purchasing and Restoring from your IAP service. Here is the QueryCommand:
+The View Model constructor finishes by defining three simple commands to expose Querying, Purchasing and Restoring from your IAP service. Here is the QueryInventory command:
 
 ```
 
 QueryCommand = new Command<InAppProduct>(
     execute: (product) =>
     {
-        _inAppService.QueryInventory();
+        TheInAppService.QueryInventory();
     });
 
 ```
@@ -352,8 +385,122 @@ We use a ```MasterDetailPage``` to setup a simple navigation for the two pages w
 
 #### Initializing
 
+We start with this call in the View Model's constructor:
+
+    TheInAppService.Initialize();
+
+##### iOS
+> Note that all classes with the ```SK``` prefix below are from the iOS StoreKit which you interact with to implement in-app purchasing on iOS.
+Picking up in the iOS platform project's ```InApp.iOS.Services.InAppService.Initialize``` we see that we first register a ```SKPaymentTransactionObserver``` with ```SkPaymentQueue```.
+
+            this._customPaymentObserver = new CustomPaymentObserver(this);
+            SKPaymentQueue.DefaultQueue.AddTransactionObserver(this._customPaymentObserver);
+
+We'll see how this comes into play below, but for now note the following:
+
+1. ```CustomPaymentObserver``` is a class we we implement that in turn implements ```SKPaymentTransactionObserver```. It's purpose is to monitor the various states that a ```SKPaymentTransaction``` can go through.
+2. We pass a reference to our ```InAppService``` instance so that the ```CustomPaymentObserver``` can communicate back to our service.
+3. ```SKPaymentQueue``` is the queue that we place purchase and restore requests onto.
+
+We then add a number of notification observers for app defined notifications with ```NSNotificationCenter```. We will use these notifications to make sure that we finish a particular transactions on the correct thread. Below is an example of one of the notification observer setups - we will discuss the ```Action<NSNotification>``` implementations below where the context will make more sense.
+
+    this._queryInventoryObserver = NSNotificationCenter.DefaultCenter.AddObserver(InAppService.InAppQueryInventoryNotification,
+    (notification) =>
+    {
+    .
+    .
+    .
+    }
+
+And finally, we perform an initial ```QueryInventory``` request to get our latest product information from the iOS in-app purchasing service.
+
+            if (this.CanMakePayments())
+            {
+                // Async request 
+                // StoreKit -> App Store -> ReceivedResponse (see below)
+                this.QueryInventory();
+            }
+
+##### Android
+
 #### Querying Inventory
 
+##### iOS
+Note first that our class ```InAppService``` extends ```SKProductsRequestDelegate```, an abstract class where we implement the following methods:
+
+    public void ReceivedResponse (SKProductsRequest request, SKProductsResponse response)
+    public void RequestFailed(SKRequest request, NSError error)
+
+With this in mind, we first see in our ```QueryInventory``` implementation the creation of an NSSet which contains the product ids we are interested in querying for:
+
+    var array = new NSString[1];
+    array[0] = new NSString(this.PracticeModeProductId);
+    NSSet productIdentifiers = NSSet.MakeNSObjectSet<NSString>(array);
+
+We then kick off the asynchronous request:
+
+    // Set up product request for in-app purchase to be handled in
+    // SKProductsRequestDelegate.ReceivedResponse (see above)
+    this._productsRequest = new SKProductsRequest(productIdentifiers);
+    this._productsRequest.Delegate = this; 
+    this._productsRequest.Start();
+
+Picking up in ```ReceivedResponse```, we see that we first create an ```NSDictionary``` of the ```SKProduct```(s) we have received.
+
+			SKProduct[] products = response.Products;
+
+			NSDictionary userInfo = null;
+			if (products.Length > 0) 
+            {
+				NSObject[] productIdsArray = new NSObject[response.Products.Length];
+				NSObject[] productsArray = new NSObject[response.Products.Length];
+				for (int i = 0; i < response.Products.Length; i++) {
+					productIdsArray[i] = new NSString(response.Products[i].ProductIdentifier);
+					productsArray[i] = response.Products[i];
+				}
+				userInfo = NSDictionary.FromObjectsAndKeys (productsArray, productIdsArray);
+			}
+
+We then post our app defined notification ```InAppQueryInventoryNotification``` to the ```NSNotificationCenter``` so that we can finish the ```QueryInventory``` transaction on the correct thread:
+
+			NSNotificationCenter.DefaultCenter.PostNotificationName(
+                InAppQueryInventoryNotification,
+                this,
+                userInfo);
+
+Finally, to finish out the ```QueryInventory``` transaction, we pick up in our ```Action<NSNotification>``` implementation for  ```InAppQueryInventoryNotification``` which was setup in our ```Initialize``` function:
+
+            this._queryInventoryObserver = NSNotificationCenter.DefaultCenter.AddObserver(InAppService.InAppQueryInventoryNotification,
+                (notification) =>
+                {
+
+The first thing we do here is to extract out the ```SKProduct``` we packaged up in our ```ReceivedResponse``` implementation above:
+
+                    var practiceModeProductId = new NSString(this.PracticeModeProductId);
+                    var product = (SKProduct)info.ObjectForKey(practiceModeProductId);
+
+At this point, you would probably want to update local storage such as SQLite.net, however here, to keep it simple, we just update the View Model directly.
+
+                    // Update inventory
+                    var newProduct = new InAppProduct();
+                    newProduct.ProductId = this.PracticeModeProductId;
+                    newProduct.Type = "inapp";
+                    newProduct.Price = this.LocalizedPrice(product);
+                    newProduct.PriceCurrencyCode = product.PriceLocale.CurrencyCode;
+                    newProduct.Title = product.LocalizedTitle;
+                    newProduct.Description = product.LocalizedDescription;
+
+                    App.ViewModel.Products.Add(newProduct);
+
+Finally we notify anyone who need to know that we finished our QueryInventory transaction:
+
+                    // Notify anyone who needed to know that our inventory is in
+                    if (this.OnQueryInventory != null)
+                    {
+                        this.OnQueryInventory();
+                    }
+
+ 
 #### Making a Purchase
 
 #### Restoring a Purchase
