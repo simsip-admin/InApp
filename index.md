@@ -502,8 +502,133 @@ Finally we notify anyone who need to know that we finished our QueryInventory tr
 
  
 #### Making a Purchase
+#####iOS
+Recall that in our ```Initialize``` function we setup our class ```CustomPaymentObserver``` to be a ```SKPaymentTransactionObserver``` on the ```SKPaymentQueue```. With that in mind, we start in ```PurchaseProduct``` by first creating an ```SKPayment```:
+
+            // Construct a payment request
+            var payment = SKPayment.PaymentWithProduct(productId);
+
+We then queue the payment up in the ```SKPaymentQueue```:
+
+            // Queue the payment request up
+            // Will be handled in:
+            // CustomPaymentObserver.UpdatedTransactions -> InAppService.PurchaseTransaction - InAppService.FinishTransaction
+            SKPaymentQueue.DefaultQueue.AddPayment(payment);
+
+This asynchronous call will continue in our ```CustomPaymentObserver.UpdatedTransactions``` override:
+
+    public override void UpdatedTransactions(SKPaymentQueue queue, SKPaymentTransaction[] transactions)
+        {
+
+Here we have been called back with the status of our payment transaction. Remember that in setting up our instance of ```CustomPaymentObserver``` we passed in a reference to our ```InAppService``` instance. We'll now follow the flow of a successful transaction. Back in ```UpdatedTransactions```, for each transaction we received, call back into our ```InAppService.PurchaseTransaction``` function passing in the transaction itself:
+
+            foreach (SKPaymentTransaction transaction in transactions)
+            {
+                switch (transaction.TransactionState)
+                {
+                    case SKPaymentTransactionState.Purchased:
+                        this._inAppService.PurchaseTransaction(transaction);
+                        break;
+
+Picking this up in ```InAppService.PurchaseTransaction```, we see that we simplistically add the details of the purchase to a new instance of our ```InAppPurchase``` model and then add it to our View Model collection of purchases. In a real app, you would probably want to store this to a ```SQLite``` table.
+
+            // Record the purchase
+            var newPurchase = new InAppPurchase
+                {
+                    OrderId = transaction.TransactionIdentifier,
+                    ProductId = transaction.Payment.ProductIdentifier,
+                    PurchaseTime = NSDateToDateTime(transaction.TransactionDate)
+                };
+            App.ViewModel.Purchases.Add(newPurchase);
+
+Then, remove the transaction from the ```SKPaymentQueue```:
+
+            // Remove the transaction from the payment queue.
+            // IMPORTANT: Let's ios know we're done
+            SKPaymentQueue.DefaultQueue.FinishTransaction(transaction);
+
+Then, build out and post a notification for the NotificationCenter so we can finish the transaction on the correct thread:
+
+            // Send out a notification that we’ve finished the transaction
+            using (var pool = new NSAutoreleasePool())
+            {
+                NSDictionary userInfo = NSDictionary.FromObjectsAndKeys(new NSObject[] { transaction }, new NSObject[] { new NSString("transaction") });
+                NSNotificationCenter.DefaultCenter.PostNotificationName(InAppPurchaseProductNotification, this, userInfo);
+            }
+
+Back in Initialize, for our implementation of the product purchased notification, we see that we simple notify anyone who was interested:
+
+            this._purchaseProductObserver = NSNotificationCenter.DefaultCenter.AddObserver(InAppService.InAppPurchaseProductNotification,
+                (notification) =>
+                {
+                    // Notify anyone who needed to know that product was purchased
+                    if (this.OnPurchaseProduct != null)
+                    {
+                        this.OnPurchaseProduct();
+                    }
+
+                });
+
+
+#####Android
 
 #### Restoring a Purchase
+##### iOS
+Restoring a purchase is very similar to the transaction flow for making a purchase. We start in ```RestoreProducts``` by asking the ```SKPaymentQueue``` to restore all completed transactions:
+
+            // theObserver will be notified of when the restored transactions start arriving <- AppStore
+            SKPaymentQueue.DefaultQueue.RestoreCompletedTransactions();
+
+Picking up in our ```CustomPaymentObserver.UpdatedTransactions```, we see that we call back into our ```InAppService.RestoreTransaction``` function:
+
+
+        public override void UpdatedTransactions(SKPaymentQueue queue, SKPaymentTransaction[] transactions)
+        {
+            foreach (SKPaymentTransaction transaction in transactions)
+            {
+                switch (transaction.TransactionState)
+                {
+                    .
+                    .
+                    .
+                    case SKPaymentTransactionState.Restored:
+                        this._inAppService.RestoreTransaction(transaction);
+                        break;
+        
+In ```InAppService.RestoreTransaction```, we first simplistically record the restored transaction. In a real app you would probably want to update a ```SQLite``` table:
+
+            // Record the restore
+            var newPurchase = new InAppPurchase
+                {
+                    OrderId = transaction.OriginalTransaction.TransactionIdentifier,
+                    ProductId = transaction.OriginalTransaction.Payment.ProductIdentifier,
+                    PurchaseTime = NSDateToDateTime(transaction.OriginalTransaction.TransactionDate)
+                };
+            App.ViewModel.Purchases.Add(newPurchase);
+
+We then remove the restore transaction from the ```SKPaymentQueue```:
+
+            // Remove the transaction from the payment queue.
+            // IMPORTANT: Let's ios know we're done
+            SKPaymentQueue.DefaultQueue.FinishTransaction(transaction);
+
+And then we build an post a notification to the ```NSNotificationCenter```:
+
+            // Send out a notification that we’ve finished the transaction
+            using (var pool = new NSAutoreleasePool())
+            {
+                NSDictionary userInfo = NSDictionary.FromObjectsAndKeys(new NSObject[] { transaction }, new NSObject[] { new NSString("transaction") });
+                NSNotificationCenter.DefaultCenter.PostNotificationName(InAppRestoreProductsNotification, this, userInfo);
+            }
+
+Finally, back in our Initialize function we will see the handling of this notification simply notifies anyone who is interested:
+
+                    // Notify anyone who needed to know that products were restored
+                    if (this.OnRestoreProducts != null)
+                    {
+                        this.OnRestoreProducts();
+                    }
+
 
 ### Testing
 
