@@ -13,13 +13,10 @@ namespace InApp
      
     public class App : Application
     {
-        public static App Instance;
         public static InAppViewModel ViewModel;
 
         public App()
         {
-            Instance = this;
-
             ViewModel = new InAppViewModel();
             ViewModel.RestoreState(Current.Properties);
 

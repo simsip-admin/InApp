@@ -4,6 +4,7 @@ using System.Linq;
 
 using Foundation;
 using UIKit;
+using InApp.iOS.Services;
 
 namespace InApp.iOS
 {
@@ -26,6 +27,14 @@ namespace InApp.iOS
             LoadApplication(new App());
 
             return base.FinishedLaunching(app, options);
+        }
+
+        public override void WillTerminate(UIApplication application)
+        {
+            var inAppService = App.ViewModel.TheInAppService as InAppService;
+            inAppService.WillTerminate();
+
+            base.WillTerminate(application);
         }
     }
 }

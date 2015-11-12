@@ -13,18 +13,17 @@ namespace InApp.ViewModels
 {
     public class InAppViewModel : ViewModelBase
     {
-        IInAppService _inAppService;
-
         ObservableCollection<InAppProduct> _products;
         ObservableCollection<InAppPurchase> _purchases;
         InAppPurchaseList _purchaseList;
 
         public InAppViewModel()
         {
-            _inAppService = DependencyService.Get<IInAppService>();
-            _inAppService.OnQueryInventory += OnQueryInventory;
-            _inAppService.OnPurchaseProduct += OnPurchaseProduct;
-            _inAppService.OnRestoreProducts += OnRestoreProducts;
+            TheInAppService = DependencyService.Get<IInAppService>();
+            TheInAppService.OnQueryInventory += OnQueryInventory;
+            TheInAppService.OnPurchaseProduct += OnPurchaseProduct;
+            TheInAppService.OnRestoreProducts += OnRestoreProducts;
+            TheInAppService.Initialize();
 
             _purchases = new ObservableCollection<InAppPurchase>();
             _purchaseList = new InAppPurchaseList();
@@ -34,21 +33,23 @@ namespace InApp.ViewModels
             QueryCommand = new Command<InAppProduct>(
                 execute: (product) =>
                 {
-                    _inAppService.QueryInventory();
+                    TheInAppService.QueryInventory();
                 });
 
             PurchaseCommand = new Command<InAppProduct>(
                 execute: (product) =>
                 {
-                    _inAppService.PurchaseProduct(product.ProductId);
+                    TheInAppService.PurchaseProduct(product.ProductId);
                 });
 
             RestoreCommand = new Command<InAppProduct>(
                 execute: (product) =>
                 {
-                    _inAppService.RestoreProducts();
+                    TheInAppService.RestoreProducts();
                 });
         }
+
+        public IInAppService TheInAppService { get; private set; }
 
         void OnQueryInventory()
         {
