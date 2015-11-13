@@ -10,8 +10,7 @@ The challenge with cross-platform in-app purchasing (IAP) is that the transactio
 
 <img src="images/screenshot-ios-inapp.PNG" width="40%">  <img src="images/screenshot-android-inapp.png" width="40%">
 
-
-### Setup
+### <a name="setup">Setup</a>
 1. In Visual Studio, start with a new `Blank App (Xamarin.Forms.Portable)`, and remove the Windows Phone platform project.
 
 #### iOS
@@ -168,7 +167,7 @@ And finally add these delegates in the ```IInAppService``` file outside of the i
     public delegate void OnPurchaseFailedValidationDelegate(
         InAppPurchase purchase, string purchaseData, string purchaseSignature);
 
-### The Implementation
+### <a name="implementation">The Implementation</a>
 I won't be showing much code in this section - mostly pointing you to the necessary files in the GitHub repository to add to your implementation. Actual code will be exposed in the ```Code Walk-through```  section below.
 
 1. Add a ```Services``` folder to both your iOS and Android platform projects.
@@ -204,7 +203,7 @@ And add the following overrides to the Android platform project's ```MainActivit
         }
 
 
-### The Sample App
+### <a name="app">The Sample App</a>
 I have kept the UI and MVVM architecture as simple as possible so that the focus can be on the transaction flows for IAP.
 #### App
 The ```App``` class couldn't be simpler. We have one View Model for the entire app and this is exposed via the static member ```ViewModel```. 
@@ -381,7 +380,7 @@ The rest of the View Model won't be covered as it consists of mainly of helper f
 We use a ```MasterDetailPage``` to setup a simple navigation for the two pages we will be hosting in this app. See ```InApp.Pages.RootPage``` and ```InApp.Pages.MenuPage``` for the Master-Detail setup. The ```InApp.Pages.ShopPage``` presents a ```ListView``` of the products available in our app. The ```ViewCell``` for this ```ListView``` contains a ```Button``` and a ```Label``` hooked up to our View Model's ```PurchaseCommand``` and ```RestoreCommand``` respectively. The ```InApp.Pages.PurchasesPage``` presents a ```ListView``` of the purchases we have made.
 
 
-### Code Walk-through
+### <a name="walk">Code Walk-through</a>
 
 #### Initializing
 
@@ -630,9 +629,10 @@ Finally, back in our Initialize function we will see the handling of this notifi
                     }
 
 
-### Testing
+### <a name="test">Testing</a>
 
-### Publishing
+### <a name="publish">Publishing</a>
+
 
    
 
