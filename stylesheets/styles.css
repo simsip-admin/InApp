@@ -309,6 +309,9 @@ a.buttons {
 a.github {
 	background: url(../images/octocat-small.png) no-repeat 1px;
 }
+a.githuba {
+	background: url(../images/empty.png) no-repeat 1px;
+}
 
 a.buttons:hover {
 	color: #fff;
