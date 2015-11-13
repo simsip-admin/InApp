@@ -4,16 +4,16 @@ title: Bill McRoberts
 home: true
 ---
 
-## Xamarin.Forms Dependency Service for In-App Purchases
+# Xamarin.Forms Dependency Service for In-App Purchases
 
 The challenge with cross-platform in-app purchasing (IAP) is that the transaction flows are so different across iOS and Android. In the game [Linerunner 3D](http://linerunner3d.com "Linerunner 3D"), I wanted a consistent interface to code against for IAP. While I was able to accomplish this, the code-base was shared code not PCL so I ended up with a lot of `#defines`. With Xamarin.Forms and the DependencyService we have a cleaner way of exposing platform-specific functionality exposed via a consistent API. This sample exposes platform specific IAP functionality via a single interface that can be consumed in a Xamarin.Forms PCL.  
 
 <img src="images/screenshot-ios-inapp.PNG" width="40%">  <img src="images/screenshot-android-inapp.png" width="40%">
 
-### <a name="setup">Setup</a>
+# <a name="setup">Setup</a>
 1. In Visual Studio, start with a new `Blank App (Xamarin.Forms.Portable)`, and remove the Windows Phone platform project.
 
-#### iOS
+## iOS
 
 >  See the Xamarin [In-App Purchase Basics and Configuration](http://developer.xamarin.com/guides/ios/application_fundamentals/in-app_purchasing/part_1_-_in-app_purchase_basics_and_configuration/ "In-App Purchase Basics and Configuration") page for details on the following steps.
 
@@ -22,7 +22,7 @@ The challenge with cross-platform in-app purchasing (IAP) is that the transactio
 1. Add products to your application. in iTunes Connect Application Management
 
 
-#### Android
+## Android
 2. In the Android platform project add the [Xamarin.InAppBilling](https://components.xamarin.com/view/xamarin.inappbilling "Xamarin.InAppBilling") component.
 3. In the `AndroidManifest.xml` file, add the `<uses-permission android:name="com.android.vending.BILLING" />` line between the `<manifest>...</manifest>` tags.
 3. Install the Google Play Billing Library. On the [Xamarin.InAppBilling Getting Started](https://components.xamarin.com/gettingstarted/xamarin.inappbilling "Xamarin.InAppBilling Getting Started") page, see the `Installing the Google Play Billing Library` section for detailed steps.
@@ -34,7 +34,7 @@ The challenge with cross-platform in-app purchasing (IAP) is that the transactio
 > On the [Xamarin.InAppBilling Getting Started](https://components.xamarin.com/gettingstarted/xamarin.inappbilling "Xamarin.InAppBilling Getting Started") page, see the `Preparing Your App for In-App Billing` section for details on the above steps.
  
 
-### <a name="interface">The Interface</a>
+# <a name="interface">The Interface</a>
 The interface exposes an API and set of events to consume IAP.
 
 > But wait you say, can't we do this with a Task based API instead of hooking up events? Hang in there, that's exactly where I want to evolve this sample in the future.
@@ -167,7 +167,7 @@ And finally add these delegates in the ```IInAppService``` file outside of the i
     public delegate void OnPurchaseFailedValidationDelegate(
         InAppPurchase purchase, string purchaseData, string purchaseSignature);
 
-### <a name="implementation">The Implementation</a>
+# <a name="implementation">The Implementation</a>
 I won't be showing much code in this section - mostly pointing you to the necessary files in the GitHub repository to add to your implementation. Actual code will be exposed in the ```Code Walk-through```  section below.
 
 1. Add a ```Services``` folder to both your iOS and Android platform projects.
@@ -203,9 +203,9 @@ And add the following overrides to the Android platform project's ```MainActivit
         }
 
 
-### <a name="app">The Sample App</a>
+# <a name="app">The Sample App</a>
 I have kept the UI and MVVM architecture as simple as possible so that the focus can be on the transaction flows for IAP.
-#### App
+## App
 The ```App``` class couldn't be simpler. We have one View Model for the entire app and this is exposed via the static member ```ViewModel```. 
 
     public static InAppViewModel ViewModel;
@@ -221,7 +221,7 @@ In ```App.OnSleep``` we save out the View Model's state.
 
     ViewModel.SaveState(Current.Properties);
  
-#### Models
+## Models
 Our Product Model looks as follows:
 
     public class InAppProduct
@@ -335,7 +335,7 @@ And our Purchase Model looks like this:
 
 The ```DataContract``` and ```DataMember``` annotations are here for simple serialization of purchases - normally instances of these models would be serialized to ```SQLite.net```. 
 
-#### ViewModel
+## ViewModel
 Our View Model constructor starts off by requesting a ```GlobalInstance``` of our ```IInAppService``` from the ```DependencyService```.
 
     TheInAppService = DependencyService.Get<IInAppService>();
@@ -376,19 +376,19 @@ QueryCommand = new Command<InAppProduct>(
 
 The rest of the View Model won't be covered as it consists of mainly of helper functions and boiler-plate View Model code that are outside our focus on IAP.
 
-#### Pages
+## Pages
 We use a ```MasterDetailPage``` to setup a simple navigation for the two pages we will be hosting in this app. See ```InApp.Pages.RootPage``` and ```InApp.Pages.MenuPage``` for the Master-Detail setup. The ```InApp.Pages.ShopPage``` presents a ```ListView``` of the products available in our app. The ```ViewCell``` for this ```ListView``` contains a ```Button``` and a ```Label``` hooked up to our View Model's ```PurchaseCommand``` and ```RestoreCommand``` respectively. The ```InApp.Pages.PurchasesPage``` presents a ```ListView``` of the purchases we have made.
 
 
-### <a name="walk">Code Walk-through</a>
+# <a name="walk">Code Walk-through</a>
 
-#### Initializing
+## Initializing
 
 We start with this call in the View Model's constructor:
 
     TheInAppService.Initialize();
 
-##### iOS
+### iOS
 > Note that all classes with the ```SK``` prefix below are from the iOS StoreKit which you interact with to implement in-app purchasing on iOS.
 Picking up in the iOS platform project's ```InApp.iOS.Services.InAppService.Initialize``` we see that we first register a ```SKPaymentTransactionObserver``` with ```SkPaymentQueue```.
 
@@ -420,11 +420,11 @@ And finally, we perform an initial ```QueryInventory``` request to get our lates
                 this.QueryInventory();
             }
 
-##### Android
+### Android
 
-#### Querying Inventory
+## Querying Inventory
 
-##### iOS
+### iOS
 Note first that our class ```InAppService``` extends ```SKProductsRequestDelegate```, an abstract class where we implement the following methods:
 
     public void ReceivedResponse (SKProductsRequest request, SKProductsResponse response)
@@ -500,8 +500,8 @@ Finally we notify anyone who need to know that we finished our QueryInventory tr
                     }
 
  
-#### Making a Purchase
-#####iOS
+## Making a Purchase
+###iOS
 Recall that in our ```Initialize``` function we setup our class ```CustomPaymentObserver``` to be a ```SKPaymentTransactionObserver``` on the ```SKPaymentQueue```. With that in mind, we start in ```PurchaseProduct``` by first creating an ```SKPayment```:
 
             // Construct a payment request
@@ -569,10 +569,10 @@ Back in Initialize, for our implementation of the product purchased notification
                 });
 
 
-#####Android
+###Android
 
-#### Restoring a Purchase
-##### iOS
+## Restoring a Purchase
+### iOS
 Restoring a purchase is very similar to the transaction flow for making a purchase. We start in ```RestoreProducts``` by asking the ```SKPaymentQueue``` to restore all completed transactions:
 
             // theObserver will be notified of when the restored transactions start arriving <- AppStore
@@ -629,9 +629,9 @@ Finally, back in our Initialize function we will see the handling of this notifi
                     }
 
 
-### <a name="test">Testing</a>
+# <a name="test">Testing</a>
 
-### <a name="publish">Publishing</a>
+# <a name="publish">Publishing</a>
 
 
    
