@@ -35,7 +35,7 @@ The challenge with cross-platform in-app purchasing (IAP) is that the transactio
 > On the [Xamarin.InAppBilling Getting Started](https://components.xamarin.com/gettingstarted/xamarin.inappbilling "Xamarin.InAppBilling Getting Started") page, see the `Preparing Your App for In-App Billing` section for details on the above steps.
  
 
-### [The Interface](#interface)
+### <a name="interface">The Interface</a>
 The interface exposes an API and set of events to consume IAP.
 
 > But wait you say, can't we do this with a Task based API instead of hooking up events? Hang in there, that's exactly where I want to evolve this sample in the future.
