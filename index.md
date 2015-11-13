@@ -389,8 +389,11 @@ We start with this call in the View Model's constructor:
     TheInAppService.Initialize();
 
 ### iOS
+We'll pick up the flow in the iOS platform project in `InApp.iOS.Services.InAppService.Initialize`.
+
 > Note that all classes with the ```SK``` prefix below are from the iOS StoreKit which you interact with to implement in-app purchasing on iOS.
-Picking up in the iOS platform project's ```InApp.iOS.Services.InAppService.Initialize``` we see that we first register a ```SKPaymentTransactionObserver``` with ```SkPaymentQueue```.
+
+We see that we first register a ```SKPaymentTransactionObserver``` with ```SkPaymentQueue```.
 
             this._customPaymentObserver = new CustomPaymentObserver(this);
             SKPaymentQueue.DefaultQueue.AddTransactionObserver(this._customPaymentObserver);
@@ -421,6 +424,47 @@ And finally, we perform an initial ```QueryInventory``` request to get our lates
             }
 
 ### Android
+We'll pick up the flow in the Android platform project in `InApp.Droid.Services.InAppService.Initialize`.
+
+We first see a staging of our In-App Billing public key. You can get your key on the [Google Play Developer Console](https://play.google.com/apps/publish/). In the console, navigate to the `Services & APIs` tab for your app. You will find your key under the `YOUR LICENSE KEY FOR THIS APPLICATION` header. Divide the key into 4 sequential string parts. Then drop in the string parts into their appropriate slot in the call to `Security.Unify` as seen below. This will provide greater security for embedding your key into your app. 
+
+
+            string value = Security.Unify(
+                new string[] { 
+                    "Insert part 0",
+                    "Insert part 3",
+                    "Insert part 2",
+                    "Insert part 1" },
+                new int[] { 0, 3, 2, 1 });
+
+Now proceed to create a new connection to the Google Play Service using your key and a reference to your main `Activity`.
+
+            _serviceConnection = new InAppBillingServiceConnection(MainActivity.Instance, value);
+
+Note, that you are not actually connecting yet - we'll see that soon. First, hook up some event handlers for the various life-cycle events we are interested in. We hook-up the events in our 
+delegate implementation for `InAppBillingServiceConnection.OnConnected`. We show here an example of hooking up one event only as we will walk the event handling code itself in an appropriate section below where the context will make more sense.
+ 
+            _serviceConnection.OnConnected += () =>
+            {
+                this._serviceConnection.BillingHandler.OnProductPurchased += (int response, Purchase purchase, string purchaseData, string purchaseSignature) =>
+                {
+                .
+                .
+                .
+                }
+            .
+            .
+            .
+
+We finish the `OnConnected` implementation by requesting our latest product details by making a call to our own `QueryInventory`.
+
+                // Load inventory or available products
+                this.QueryInventory();
+
+With all of our events hooked up, we proceed to create the actual connection to Google Play Service.
+
+                    _serviceConnection.Connect();
+
 
 ## Querying Inventory
 
@@ -499,9 +543,44 @@ Finally we notify anyone who need to know that we finished our QueryInventory tr
                         this.OnQueryInventory();
                     }
 
- 
+
+### Android
+We start by making an asynchronous request to the `Xamarin.InAppBilling.InAppBillingHandler` for a designated set of products we are interested in.
+
+            var products = await this._serviceConnection.BillingHandler.QueryInventoryAsync(
+                                new List<string>() 
+                                    { 
+                                        this.PracticeModeProductId
+                                    }, 
+                                    ItemType.Product);
+
+When the response is received, we create app specific model representations for the `Xamarin.InAppBilling.Product`(s) we have received and store them to the View Model. In real app, you would probably want to store them to a SQLite table.
+
+            // Update inventory
+            foreach (Product product in products)
+            {
+                var newProduct = new InAppProduct();
+                newProduct.ProductId = product.ProductId;
+                newProduct.Type = ItemType.Product;
+                newProduct.Price = product.Price;
+                newProduct.Title = product.Title;
+                newProduct.Description = product.Description;
+                newProduct.PriceCurrencyCode = product.Price_Currency_Code;
+
+                App.ViewModel.Products.Add(newProduct);
+            }
+
+
+Finally, we notify anyone who is interested that the QueryInventory request has finished.
+
+            if (this.OnQueryInventory != null)
+            {
+                this.OnQueryInventory();
+            }
+
+
 ## Making a Purchase
-###iOS
+### iOS
 Recall that in our ```Initialize``` function we setup our class ```CustomPaymentObserver``` to be a ```SKPaymentTransactionObserver``` on the ```SKPaymentQueue```. With that in mind, we start in ```PurchaseProduct``` by first creating an ```SKPayment```:
 
             // Construct a payment request
@@ -546,7 +625,7 @@ Then, remove the transaction from the ```SKPaymentQueue```:
             // IMPORTANT: Let's ios know we're done
             SKPaymentQueue.DefaultQueue.FinishTransaction(transaction);
 
-Then, build out and post a notification for the NotificationCenter so we can finish the transaction on the correct thread:
+Then, build out and post a notification for the `NotificationCenter` so we can finish the transaction on the correct thread:
 
             // Send out a notification that we’ve finished the transaction
             using (var pool = new NSAutoreleasePool())
@@ -570,7 +649,7 @@ Back in Initialize, for our implementation of the product purchased notification
 
 
 ###Android
-
+  
 ## Restoring a Purchase
 ### iOS
 Restoring a purchase is very similar to the transaction flow for making a purchase. We start in ```RestoreProducts``` by asking the ```SKPaymentQueue``` to restore all completed transactions:
